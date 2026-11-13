@@ -142,6 +142,35 @@ class MercuryEntry::ProcessorTest < ActiveSupport::TestCase
     end
   end
 
+  test "skips cancelled and blocked transactions" do
+    assert_no_difference "@account.entries.count" do
+      assert_nil process(tx(id: "tx_cancelled", status: "cancelled"))
+      assert_nil process(tx(id: "tx_blocked", status: "blocked"))
+    end
+  end
+
+  test "removes the pending entry when Mercury cancels or fails the transaction" do
+    %w[cancelled failed].each do |status|
+      process(tx(id: "tx_#{status}", status: "pending"))
+      assert @account.entries.exists?(external_id: "mercury_tx_#{status}", source: "mercury")
+
+      assert_difference "@account.entries.count", -1 do
+        assert_nil process(tx(id: "tx_#{status}", status: status))
+      end
+    end
+  end
+
+  test "keeps a posted or user-edited entry when a later status does not book" do
+    process(tx(id: "tx_posted", status: "sent"))
+    process(tx(id: "tx_edited", status: "pending"))
+    @account.entries.find_by!(external_id: "mercury_tx_edited").update!(user_modified: true)
+
+    assert_no_difference "@account.entries.count" do
+      process(tx(id: "tx_posted", status: "cancelled"))
+      process(tx(id: "tx_edited", status: "cancelled"))
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # idempotency
   # ---------------------------------------------------------------------------

@@ -3,6 +3,9 @@ require "digest/md5"
 class MercuryEntry::Processor
   include CurrencyNormalizable
 
+  # Mercury statuses for money that never moved
+  NON_BOOKING_STATUSES = %w[failed cancelled blocked].freeze
+
   # mercury_transaction is the raw hash fetched from Mercury API and converted to JSONB
   # Transaction structure: { id, amount, bankDescription, counterpartyId, counterpartyName,
   #                          counterpartyNickname, createdAt, dashboardLink, details,
@@ -20,9 +23,9 @@ class MercuryEntry::Processor
       return nil
     end
 
-    # Skip failed transactions
-    if data[:status] == "failed"
-      Rails.logger.debug "MercuryEntry::Processor - Skipping failed transaction #{external_id}"
+    if NON_BOOKING_STATUSES.include?(data[:status])
+      Rails.logger.debug "MercuryEntry::Processor - Skipping #{data[:status]} transaction #{external_id}"
+      remove_pending_entry
       return nil
     end
 
@@ -57,6 +60,17 @@ class MercuryEntry::Processor
 
   private
     attr_reader :mercury_transaction, :mercury_account
+
+    # A pending transaction Mercury later fails or cancels keeps its id, so the
+    # entry imported while it was pending is the one to drop.
+    def remove_pending_entry
+      entry = account.entries.find_by(external_id: external_id, source: "mercury")
+      return unless entry&.entryable.is_a?(Transaction)
+      return unless entry.entryable.extra.dig("mercury", "pending")
+      return if entry.protected_from_sync?
+
+      entry.destroy!
+    end
 
     def import_adapter
       @import_adapter ||= Account::ProviderImportAdapter.new(account)
