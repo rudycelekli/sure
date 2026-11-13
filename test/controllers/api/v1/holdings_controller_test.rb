@@ -81,6 +81,29 @@ class Api::V1::HoldingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "rejects date filters that are not ISO 8601" do
+    [
+      { start_date: "05/03/2026" },
+      { end_date: "March" },
+      { date: "3rd Feb 2026" }
+    ].each do |filter|
+      get api_v1_holdings_url, params: filter, headers: api_headers(@api_key)
+
+      assert_response :unprocessable_entity, "expected #{filter} to be rejected"
+      assert_equal "validation_failed", JSON.parse(response.body)["error"]
+    end
+  end
+
+  test "filters by ISO 8601 dates" do
+    get api_v1_holdings_url,
+        params: { start_date: @holding.date.iso8601, end_date: @holding.date.iso8601 },
+        headers: api_headers(@api_key)
+
+    assert_response :success
+    holding_ids = JSON.parse(response.body)["holdings"].map { |holding| holding["id"] }
+    assert_includes holding_ids, @holding.id
+  end
+
   test "requires authentication" do
     get api_v1_holdings_url
 

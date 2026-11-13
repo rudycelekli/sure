@@ -95,7 +95,7 @@ class Api::V1::HoldingsController < Api::V1::BaseController
     end
 
     def parse_date!(value, param_name)
-      Date.parse(value)
+      Date.iso8601(value.to_s)
     rescue Date::Error, ArgumentError, TypeError
       raise ArgumentError, "Invalid #{param_name} format"
     end
