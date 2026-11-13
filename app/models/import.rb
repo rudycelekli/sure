@@ -737,7 +737,11 @@ class Import < ApplicationRecord
         edge_junk = /\A[^\d#{Regexp.escape(format[:separator])}\-]+|[^\d#{Regexp.escape(format[:separator])}\-]+\z/
         sanitized = sanitized.gsub(edge_junk, "")
       else
-        sanitized = sanitized.gsub(/[^\d#{Regexp.escape(format[:delimiter])}#{Regexp.escape(format[:separator])}\-]/, "")
+        # The zero-decimal format has no separator, but a "." in it is still a
+        # decimal point (a 0.5 share quantity, an exporter writing "1234.0"),
+        # not junk to delete: dropping it turns 0.5 into 5.
+        separator = format[:separator].presence || "."
+        sanitized = sanitized.gsub(/[^\d#{Regexp.escape(format[:delimiter])}#{Regexp.escape(separator)}\-]/, "")
 
         # Replace delimiter with empty string
         if format[:delimiter].present?

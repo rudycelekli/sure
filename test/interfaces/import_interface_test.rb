@@ -219,6 +219,25 @@ module ImportInterfaceTest
     assert_equal "1234", row.amount
   end
 
+  test "keeps a decimal point in the zero-decimal format" do
+    import = imports(:transaction)
+    import.update!(
+      number_format: "1,234",
+      amount_col_label: "amount",
+      date_col_label: "date",
+      name_col_label: "name",
+      date_format: "%m/%d/%Y"
+    )
+
+    csv_data = "date,amount,name\n01/01/2024,\"1,234.5\",Fractional\n01/02/2024,1234.00,Padded"
+    import.update!(raw_file_str: csv_data)
+    import.generate_rows_from_csv
+    import.reload
+
+    assert_equal "1234.5", import.rows.find_by!(name: "Fractional").amount
+    assert_equal "1234.00", import.rows.find_by!(name: "Padded").amount
+  end
+
   test "currency from CSV takes precedence over default" do
     import = imports(:transaction)
     import.update!(
