@@ -404,6 +404,33 @@ class QifImportTest < ActiveSupport::TestCase
     assert_equal "Summer Vacation 2023", vacation.description
   end
 
+  # ── QifParser: amounts ───────────────────────────────────────────────────────
+
+  test "parse reads decimal-comma amounts" do
+    qif = <<~QIF
+      !Type:Bank
+      D01.02.2024
+      T-12,50
+      PCafe
+      ^
+      D02.02.2024
+      T1.234,56
+      PSalary
+      ^
+      D03.02.2024
+      T-1,234
+      PRent
+      ^
+      D04.02.2024
+      T-2,345.60
+      PCar
+      ^
+    QIF
+
+    amounts = QifParser.parse(qif, date_format: "%d.%m.%Y").map(&:amount)
+    assert_equal %w[-12.50 1234.56 -1234 -2345.60], amounts
+  end
+
   # ── QifParser: encoding ──────────────────────────────────────────────────────
 
   test "normalize_encoding returns content unchanged when already valid UTF-8" do

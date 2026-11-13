@@ -558,10 +558,19 @@ module QifParser
   end
 
   # Strips thousands-separator commas and returns a clean decimal string.
+  # Exporters in decimal-comma locales write "-12,50" or "1.234,56"; a comma
+  # followed by one or two final digits can't be a thousands separator.
+  DECIMAL_COMMA_AMOUNT = /\A-?(\d{1,3}(\.\d{3})+|\d+),\d{1,2}\z/
+
   def self.parse_qif_amount(amount_str)
     return nil if amount_str.blank?
 
-    cleaned = amount_str.gsub(",", "").strip
+    cleaned = amount_str.strip
+    cleaned = if cleaned.match?(DECIMAL_COMMA_AMOUNT)
+      cleaned.delete(".").tr(",", ".")
+    else
+      cleaned.delete(",")
+    end
     cleaned =~ /\A-?\d+\.?\d*\z/ ? cleaned : nil
   end
   private_class_method :parse_qif_amount
