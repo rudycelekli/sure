@@ -16,7 +16,10 @@ class InvestmentStatement
   def totals(period: Period.current_month)
     account_ids = investment_account_ids
 
-    result = totals_query(account_ids: account_ids, date_range: period.date_range)
+    # Scheduled (future-dated) trades are left out until their date arrives,
+    # as IncomeStatement does. Ending the range today also keys the cache by it.
+    date_range = period.start_date..[ period.end_date, Date.current ].min
+    result = totals_query(account_ids: account_ids, date_range: date_range)
 
     PeriodTotals.new(
       contributions: Money.new(result[:contributions], family.currency),

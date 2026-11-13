@@ -496,6 +496,26 @@ class InvestmentStatementTest < ActiveSupport::TestCase
     assert_no_match(/JOIN accounts/, aggregate_queries.first)
   end
 
+  test "totals leave out scheduled trades until their date" do
+    period = Period.custom(start_date: Date.new(2026, 11, 1), end_date: Date.new(2026, 11, 30))
+    account = create_investment_account(balance: 500)
+
+    create_trade(account: account, qty: 2, amount: 120, date: Date.new(2026, 11, 13))
+    create_trade(account: account, qty: 10, amount: 500, date: Date.new(2026, 11, 25))
+
+    travel_to Date.new(2026, 11, 13) do
+      totals = InvestmentStatement.new(@family, user: nil).totals(period: period)
+      assert_equal Money.new(120, "USD"), totals.contributions
+      assert_equal 1, totals.trades_count
+    end
+
+    travel_to Date.new(2026, 11, 25) do
+      totals = InvestmentStatement.new(@family, user: nil).totals(period: period)
+      assert_equal Money.new(620, "USD"), totals.contributions
+      assert_equal 2, totals.trades_count
+    end
+  end
+
   test "totals aggregate dividend and interest income from income trades" do
     period = Period.custom(start_date: Date.current.beginning_of_month, end_date: Date.current.end_of_month)
     account = create_investment_account(balance: 500)
