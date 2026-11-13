@@ -2321,6 +2321,30 @@ class Family::DataImporterTest < ActiveSupport::TestCase
     assert_equal tag.id, condition.value
   end
 
+  test "remaps the account ids in imported rule conditions and transfer actions" do
+    ndjson = build_ndjson([
+      { type: "Account", data: { id: "old-checking", name: "Checking", balance: "0", currency: "USD", accountable_type: "Depository", accountable: { subtype: "checking" } } },
+      { type: "Account", data: { id: "old-card", name: "Card", balance: "0", currency: "USD", accountable_type: "CreditCard", accountable: {} } },
+      {
+        type: "Rule",
+        version: 1,
+        data: {
+          name: "Card payments",
+          resource_type: "transaction",
+          active: true,
+          conditions: [ { condition_type: "transaction_account", operator: "=", value: "old-checking" } ],
+          actions: [ { action_type: "set_as_transfer_or_payment", value: "old-card" } ]
+        }
+      }
+    ])
+
+    Family::DataImporter.new(@family, ndjson).import!
+
+    rule = @family.rules.find_by!(name: "Card payments")
+    assert_equal @family.accounts.find_by!(name: "Checking").id, rule.conditions.first.value
+    assert_equal @family.accounts.find_by!(name: "Card").id, rule.actions.first.value
+  end
+
   test "reuses a category created for an earlier rule within the same import" do
     ndjson = build_ndjson([
       {

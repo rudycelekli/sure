@@ -1537,6 +1537,8 @@ class Family::DataImporter
         return find_or_create_rule_tag(value).id
       end
 
+      return rule_account_id(value) if condition_type == "transaction_account"
+
       value
     end
 
@@ -1564,7 +1566,15 @@ class Family::DataImporter
         return resolve_rule_merchant_id(action_data, value)
       end
 
+      return rule_account_id(value) if action_type == "set_as_transfer_or_payment"
+
       value
+    end
+
+    # Account conditions and transfer actions hold the exported account's id;
+    # the imported account was created with a new one.
+    def rule_account_id(value)
+      mapped_id(:accounts, value, record_type: "Rule", required: false) || value
     end
 
     def resolve_multi_tag_action_value(action_data)
