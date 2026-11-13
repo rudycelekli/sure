@@ -109,6 +109,13 @@ class Api::V1::CategoriesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, response_body["pagination"]["per_page"]
   end
 
+  test "caps oversized per_page at the documented maximum" do
+    get "/api/v1/categories", params: { per_page: 250 }, headers: api_headers(read_only_api_key)
+
+    assert_response :success
+    assert_equal 100, JSON.parse(response.body)["pagination"]["per_page"]
+  end
+
   test "should filter for roots only" do
     get "/api/v1/categories", params: { roots_only: true }, headers: api_headers(read_only_api_key)
 

@@ -119,20 +119,4 @@ class Api::V1::CategoriesController < Api::V1::BaseController
 
       query
     end
-
-    def safe_page_param
-      page = params[:page].to_i
-      page > 0 ? page : 1
-    end
-
-    def safe_per_page_param
-      per_page = params[:per_page].to_i
-
-      case per_page
-      when 1..100
-        per_page
-      else
-        25
-      end
-    end
 end

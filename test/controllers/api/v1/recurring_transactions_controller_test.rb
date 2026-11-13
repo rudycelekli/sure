@@ -49,6 +49,13 @@ class Api::V1::RecurringTransactionsControllerTest < ActionDispatch::Integration
     assert_includes response_data["recurring_transactions"].map { |item| item["id"] }, @recurring_transaction.id
   end
 
+  test "caps oversized per_page at the documented maximum" do
+    get api_v1_recurring_transactions_url, params: { per_page: 250 }, headers: api_headers(@api_key)
+
+    assert_response :success
+    assert_equal 100, JSON.parse(response.body)["pagination"]["per_page"]
+  end
+
   test "should require authentication when listing recurring transactions" do
     get api_v1_recurring_transactions_url
 

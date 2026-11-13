@@ -67,6 +67,13 @@ class Api::V1::HoldingsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes holding_ids, @private_holding.id
   end
 
+  test "caps oversized per_page at the documented maximum" do
+    get api_v1_holdings_url, params: { per_page: 250 }, headers: api_headers(@api_key)
+
+    assert_response :success
+    assert_equal 100, JSON.parse(response.body)["pagination"]["per_page"]
+  end
+
   test "shows an accessible holding" do
     get api_v1_holding_url(@holding), headers: api_headers(@api_key)
 
