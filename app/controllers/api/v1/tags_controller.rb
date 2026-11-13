@@ -59,6 +59,8 @@ module Api
         else
           render json: { error: @tag.errors.full_messages.join(", ") }, status: :unprocessable_entity
         end
+      rescue ActionController::ParameterMissing
+        raise
       rescue StandardError => e
         Rails.logger.error("API Tag Create Error: #{e.message}")
         render json: { error: "Failed to create tag" }, status: :internal_server_error
@@ -76,6 +78,8 @@ module Api
         else
           render json: { error: @tag.errors.full_messages.join(", ") }, status: :unprocessable_entity
         end
+      rescue ActionController::ParameterMissing
+        raise
       rescue StandardError => e
         Rails.logger.error("API Tag Update Error: #{e.message}")
         render json: { error: "Failed to update tag" }, status: :internal_server_error

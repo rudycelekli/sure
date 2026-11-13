@@ -10179,6 +10179,12 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+        '400':
+          description: bad request - missing tag payload
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
         '422':
           description: validation error - missing name
           content:
@@ -10247,6 +10253,12 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/TagDetail"
+        '400':
+          description: bad request - missing tag payload
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
         '404':
           description: tag not found
           content:

@@ -150,6 +150,17 @@ class Api::V1::TagsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "create returns bad request when the tag payload is missing" do
+    assert_no_difference -> { @user.family.tags.count } do
+      post api_v1_tags_url,
+           params: { name: "Unwrapped Tag" },
+           headers: read_write_headers
+    end
+
+    assert_response :bad_request
+    assert_equal "bad_request", JSON.parse(response.body)["error"]
+  end
+
   # Update action tests
   test "update requires authentication" do
     patch api_v1_tag_url(@tag), params: { tag: { name: "Updated" } }
@@ -209,6 +220,16 @@ class Api::V1::TagsControllerTest < ActionDispatch::IntegrationTest
           headers: read_write_headers
 
     assert_response :not_found
+  end
+
+  test "update returns bad request when the tag payload is missing" do
+    patch api_v1_tag_url(@tag),
+          params: { name: "Unwrapped Update" },
+          headers: read_write_headers
+
+    assert_response :bad_request
+    assert_equal "bad_request", JSON.parse(response.body)["error"]
+    assert_not_equal "Unwrapped Update", @tag.reload.name
   end
 
   # Destroy action tests

@@ -123,6 +123,14 @@ RSpec.describe 'API V1 Tags', type: :request do
         run_test!
       end
 
+      response '400', 'bad request - missing tag payload' do
+        schema '$ref' => '#/components/schemas/ErrorResponse'
+
+        let(:body) { {} }
+
+        run_test!
+      end
+
       response '422', 'validation error - missing name' do
         schema '$ref' => '#/components/schemas/ErrorResponse'
 
@@ -196,6 +204,14 @@ RSpec.describe 'API V1 Tags', type: :request do
 
       response '200', 'tag updated' do
         schema '$ref' => '#/components/schemas/TagDetail'
+
+        run_test!
+      end
+
+      response '400', 'bad request - missing tag payload' do
+        schema '$ref' => '#/components/schemas/ErrorResponse'
+
+        let(:body) { {} }
 
         run_test!
       end
