@@ -452,7 +452,7 @@ class QifImport < Import
 
           Account::OpeningBalanceManager.new(target_account).set_opening_balance(
             balance: opening_balance[:amount],
-            date:    opening_balance[:date]
+            date:    opening_balance_date(opening_balance[:date], earliest_row_date(target_account.name))
           )
         end
 
@@ -464,11 +464,20 @@ class QifImport < Import
       elsif (opening_balance = opening_balances.first)
         Account::OpeningBalanceManager.new(account).set_opening_balance(
           balance: opening_balance[:amount],
-          date:    opening_balance[:date]
+          date:    opening_balance_date(opening_balance[:date], earliest_row_date)
         )
       else
         adjust_opening_anchor_if_needed!(account, earliest_row_date)
       end
+    end
+
+    # Quicken often dates the Opening Balance on the register's first day. The
+    # balance is the account's starting point, so it has to land before every
+    # imported transaction, or the opening anchor is refused.
+    def opening_balance_date(date, earliest)
+      return date unless earliest.present? && date >= earliest
+
+      earliest - 1.day
     end
 
     def adjust_opening_anchor_if_needed!(target_account, earliest)

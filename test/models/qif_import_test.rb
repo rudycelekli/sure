@@ -833,6 +833,29 @@ class QifImportTest < ActiveSupport::TestCase
     assert_equal BigDecimal("500"),    manager.opening_balance
   end
 
+  test "import! keeps an Opening Balance dated on the first transaction's day" do
+    @import.update!(raw_file_str: <<~QIF)
+      !Type:Bank
+      D1/ 1'20
+      T500.00
+      POpening Balance
+      L[Checking Account]
+      ^
+      D1/ 1'20
+      T-25.00
+      PCoffee Shop
+      ^
+    QIF
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+    @import.import!
+
+    manager = Account::OpeningBalanceManager.new(@account.reload)
+    assert manager.has_opening_anchor?
+    assert_equal Date.new(2019, 12, 31), manager.opening_date
+    assert_equal BigDecimal("500"), manager.opening_balance
+  end
+
   test "import! creates declared account that only has an opening balance" do
     @import.update!(account: nil, raw_file_str: QIF_WITH_BALANCE_ONLY_ACCOUNT)
     @import.generate_rows_from_csv
